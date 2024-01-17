@@ -374,23 +374,12 @@ class Quickbooks():
 
             new_refresh_token = auth['refresh_token']
 
-            # persist access_token and refresh_token to config file
-            parser = argparse.ArgumentParser()
-            parser.add_argument('-c', '--config', help='Config file', required=True)
-            _args, unknown = parser.parse_known_args()
-            config_file = _args.config
-            config_content = read_json_file(config_file)
-            config_content['access_token'] = self.access_token
-            config_content['refresh_token'] = new_refresh_token
-            write_json_file(config_file, config_content)
-
             LOGGER.info(f"Old refresh token [{self.refresh_token}].")
             LOGGER.info("New Refresh token: {}".format(new_refresh_token))
 
             self.refresh_token = new_refresh_token
 
             # definite specifc. persist access and refresh token back to app.
-            # even if refresh token unchanged, still persist for simplicity.
             DEF_SCHEDULER_URL = os.environ.get('DEF_SCHEDULER_URL')
             TAP_INTEGRATION_ID = os.environ.get('TAP_INTEGRATION_ID')
             if not DEF_SCHEDULER_URL:
@@ -403,7 +392,7 @@ class Quickbooks():
                         url,
                         json={
                             'access_token': self.access_token,
-                            'refresh_token': new_refresh_token
+                            'refresh_token': self.refresh_token
                         }
                     )
                     if res.status_code != 200:
