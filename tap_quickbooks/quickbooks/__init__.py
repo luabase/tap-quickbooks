@@ -11,6 +11,10 @@ import singer.utils as singer_utils
 import os;
 from typing import Dict
 from singer import metadata, metrics
+
+import google.auth
+import google.auth.transport.requests
+
 from tap_quickbooks.quickbooks.reportstreams.MonthlyBalanceSheetReport import MonthlyBalanceSheetReport
 from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossDetailReport import ProfitAndLossDetailReport
 from tap_quickbooks.quickbooks.reportstreams.BalanceSheetReport import BalanceSheetReport
@@ -386,10 +390,20 @@ class Quickbooks():
                 LOGGER.warn("DEF_SCHEDULER_URL not set. Tokens only persisted locally.")
             else:
                 try:
+                    creds, project = google.auth.default()
+                    # creds.valid is False, and creds.token is None
+                    # Need to refresh credentials to populate those
+                    auth_req = google.auth.transport.requests.Request()
+                    creds.refresh(auth_req)
+
                     url = DEF_SCHEDULER_URL + f'/v1/scheduler/update_integration_details/{TAP_INTEGRATION_ID}'
                     LOGGER.info(f"Persisting tokens to {url}")
                     res = requests.post(
                         url,
+                        headers={
+                            'Authorization': f'Bearer {creds.token}',
+                            'Content-Type': 'application/json'
+                        },
                         json={
                             'access_token': self.access_token,
                             'refresh_token': self.refresh_token
