@@ -397,7 +397,7 @@ class Quickbooks():
                     auth_req = google.auth.transport.requests.Request()
                     id_token = google.oauth2.id_token.fetch_id_token(auth_req, DEF_SCHEDULER_URL + '/')
 
-
+                    LOGGER.info("Got id_token: {}".format(id_token))
                     url = DEF_SCHEDULER_URL + f'/v1/scheduler/update_integration_details/{TAP_INTEGRATION_ID}'
                     LOGGER.info(f"Persisting tokens to {url}")
                     res = requests.post(
