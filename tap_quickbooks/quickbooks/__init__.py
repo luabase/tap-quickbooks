@@ -14,6 +14,7 @@ from singer import metadata, metrics
 
 import google.auth
 import google.auth.transport.requests
+import google.oauth2.id_token
 
 from tap_quickbooks.quickbooks.reportstreams.MonthlyBalanceSheetReport import MonthlyBalanceSheetReport
 from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossDetailReport import ProfitAndLossDetailReport
@@ -394,19 +395,20 @@ class Quickbooks():
                     # creds.valid is False, and creds.token is None
                     # Need to refresh credentials to populate those
                     auth_req = google.auth.transport.requests.Request()
-                    creds.refresh(auth_req)
+                    id_token = google.oauth2.id_token.fetch_id_token(auth_req, DEF_SCHEDULER_URL + '/')
+
 
                     url = DEF_SCHEDULER_URL + f'/v1/scheduler/update_integration_details/{TAP_INTEGRATION_ID}'
                     LOGGER.info(f"Persisting tokens to {url}")
                     res = requests.post(
                         url,
                         headers={
-                            'Authorization': f'Bearer {creds.token}',
+                            'Authorization': f'Bearer {id_token}',
                             'Content-Type': 'application/json'
                         },
                         json={
-                            'access_token': self.access_token,
-                            'refresh_token': self.refresh_token
+                            'accessToken': self.access_token,
+                            'refreshToken': self.refresh_token
                         }
                     )
                     if res.status_code != 200:
