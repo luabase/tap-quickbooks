@@ -19,12 +19,12 @@
   "Bill": [
     {"name":"Id", "type": "string"},
     {"name":"VendorRef", "type": "string"},
-    {"name": "Line", "type": "string"},
+    {"name": "Line", "type": "array", "child_type": "bill_line"},
     {"name": "CurrencyRef", "type": "string"},
     {"name":"TxnDate", "type": "datetime"},
     {"name": "APAccountRef", "type": "string"},
     {"name": "SalesTermRef", "type": "string"},
-    {"name": "LinkedTxn", "type": "string"},
+    {"name": "LinkedTxn", "type": "array", "child_type": "linked_txn"},
     {"name": "TotalAmt", "type": "string"},
     {"name": "DueDate", "type": "datetime"},
     {"name": "MetaData", "type": "string"},
@@ -353,7 +353,7 @@
     {"name": "domain", "type": "string"},
     {"name": "Credit", "type": "boolean"},
     {"name": "DocNumber", "type": "string"},
-    {"name": "Line", "type": "string"},
+    {"name": "Line", "type": "array", "child_type": "purchase_line"},
     {"name": "PurchaseEx", "type": "string"}
   ],
   "SalesReceipt": [
@@ -402,7 +402,7 @@
   "BillPayment": [
     {"name": "Id", "type": "string"},
     {"name": "VendorRef", "type": "string"},
-    {"name": "Line", "type": "string"},
+    {"name": "Line", "type": "array", "child_type": "billpayment_line"},
     {"name": "TotalAmt", "type": "number"},
     {"name": "PayType", "type": "string"},
     {"name": "SyncToken", "type": "string"},
@@ -637,7 +637,7 @@
     {"name": "TxnTaxDetail", "type": "string"},
     {"name":"MetaData", "type": "string"},
     {"name": "time", "type": "string"},
-    {"name": "LinkedTxn", "type": "string"},
+    {"name": "LinkedTxn", "type": "array", "child_type": "linked_txn"},
     {"name": "ShipFromAddr", "type": "string"},
     {"name": "CurrencyRef", "type": "string"},
     {"name": "ShipDate", "type": "string"},
