@@ -16,34 +16,17 @@ import google.auth
 import google.auth.transport.requests
 import google.oauth2.id_token
 
-from tap_quickbooks.quickbooks.reportstreams.MonthlyBalanceSheetReport import (
-    MonthlyBalanceSheetReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossDetailReport import (
-    ProfitAndLossDetailReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.BalanceSheetReport import (
-    BalanceSheetReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerAccrualReport import (
-    GeneralLedgerAccrualReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerCashReport import (
-    GeneralLedgerCashReport,
-)
+from tap_quickbooks.quickbooks.reportstreams.MonthlyBalanceSheetReport import MonthlyBalanceSheetReport
+from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossDetailReport import ProfitAndLossDetailReport
+from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossReport import ProfitAndLossReport
+from tap_quickbooks.quickbooks.reportstreams.BalanceSheetReport import BalanceSheetReport
+from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerAccrualReport import GeneralLedgerAccrualReport
+from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerCashReport import GeneralLedgerCashReport
 from tap_quickbooks.quickbooks.reportstreams.CashFlowReport import CashFlowReport
-from tap_quickbooks.quickbooks.reportstreams.DailyCashFlowReport import (
-    DailyCashFlowReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.MonthlyCashFlowReport import (
-    MonthlyCashFlowReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.TransactionListReport import (
-    TransactionListReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.ARAgingSummaryReport import (
-    ARAgingSummaryReport,
-)
+from tap_quickbooks.quickbooks.reportstreams.DailyCashFlowReport import DailyCashFlowReport
+from tap_quickbooks.quickbooks.reportstreams.MonthlyCashFlowReport import MonthlyCashFlowReport
+from tap_quickbooks.quickbooks.reportstreams.TransactionListReport import TransactionListReport
+from tap_quickbooks.quickbooks.reportstreams.ARAgingSummaryReport import ARAgingSummaryReport
 
 from tap_quickbooks.quickbooks.rest import Rest
 from tap_quickbooks.quickbooks.exceptions import (
@@ -180,7 +163,7 @@ def field_to_property_schema(field, mdata):  # pylint:disable=too-many-branches
         },
     }
 
-    qb_types["linked_txn"] = {
+    qb_types["LinkedTxn"] = {
         "type": object_type["type"],
         "properties": {"TxnId": string_type, "TxnType": string_type},
     }
@@ -189,8 +172,44 @@ def field_to_property_schema(field, mdata):  # pylint:disable=too-many-branches
         "type": object_type["type"],
         "properties": {
             "Amount": number_type,
-            "LinkedTxn": {"type": array_type["type"], "items": qb_types["linked_txn"]},
+            "LinkedTxn": {"type": array_type["type"], "items": qb_types["LinkedTxn"]},
         },
+    }
+
+    qb_types["any"] = {
+        "type": object_type["type"],
+        "properties": {
+            "name": string_type,
+            "declaredType": string_type,
+            "scope": string_type,
+            "value": {
+                "type": object_type["type"],
+                "properties": {
+                    "Name": string_type,
+                    "Value": string_type,
+                }
+            },
+            "nil": boolean_type,
+            "globalScope": boolean_type,
+            "typeSubstituted": boolean_type,
+        }
+    }
+
+    qb_types["payment_line"] = {
+        "type": object_type["type"],
+        "properties": {
+            "Amount": number_type,
+            "LinkedTxn": {"type": "array", "items": qb_types["LinkedTxn"]},
+            "LineEx": {
+                "type": object_type["type"],
+                "properties": {
+                    "any": {
+                        "type": "array", 
+                        "items": qb_types["any"]
+                    }
+                }
+            }
+        }
     }
 
     qb_types["invoice_line"] = {
@@ -268,6 +287,8 @@ def field_to_property_schema(field, mdata):  # pylint:disable=too-many-branches
 
     return property_schema, mdata
 
+class RetriableApiError(Exception):
+    pass
 
 class Quickbooks:
     # pylint: disable=too-many-instance-attributes,too-many-arguments
@@ -408,6 +429,11 @@ class Quickbooks:
             resp = self.session.post(url, headers=headers, data=body)
         else:
             raise TapQuickbooksException("Unsupported HTTP method")
+        
+        if resp.status_code in [400, 500]:
+            if "Authorization Failure" in resp.text:
+                self.login()
+            raise RetriableApiError(resp.text)
 
         try:
             resp.raise_for_status()
@@ -566,9 +592,10 @@ class Quickbooks:
             # order_by = " ORDERBY {} ASC".format(replication_key)
             # if order_by_clause:
             #   return query + where_clause + end_date_clause + order_by
-
+            LOGGER.info(f"Executing query {query + where_clause + end_date_clause}")
             return query + where_clause + end_date_clause
         else:
+            LOGGER.info(f"Executing query {query}")
             return query
 
     def query(self, catalog_entry, state, state_passed):
@@ -605,6 +632,8 @@ class Quickbooks:
             reader = ARAgingSummaryReport(self, start_date, state_passed)
         elif catalog_entry["stream"] == "TransactionListReport":
             reader = TransactionListReport(self, start_date, state_passed)
+        elif catalog_entry["stream"] == "ProfitAndLossReport":
+            reader = ProfitAndLossReport(self, start_date, state_passed)
         else:
             reader = ProfitAndLossDetailReport(self, start_date, state_passed)
         return reader.sync(catalog_entry)
