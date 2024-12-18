@@ -16,34 +16,17 @@ import google.auth
 import google.auth.transport.requests
 import google.oauth2.id_token
 
-from tap_quickbooks.quickbooks.reportstreams.MonthlyBalanceSheetReport import (
-    MonthlyBalanceSheetReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossDetailReport import (
-    ProfitAndLossDetailReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.BalanceSheetReport import (
-    BalanceSheetReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerAccrualReport import (
-    GeneralLedgerAccrualReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerCashReport import (
-    GeneralLedgerCashReport,
-)
+from tap_quickbooks.quickbooks.reportstreams.MonthlyBalanceSheetReport import MonthlyBalanceSheetReport
+from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossDetailReport import ProfitAndLossDetailReport
+from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossReport import ProfitAndLossReport
+from tap_quickbooks.quickbooks.reportstreams.BalanceSheetReport import BalanceSheetReport
+from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerAccrualReport import GeneralLedgerAccrualReport
+from tap_quickbooks.quickbooks.reportstreams.GeneralLedgerCashReport import GeneralLedgerCashReport
 from tap_quickbooks.quickbooks.reportstreams.CashFlowReport import CashFlowReport
-from tap_quickbooks.quickbooks.reportstreams.DailyCashFlowReport import (
-    DailyCashFlowReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.MonthlyCashFlowReport import (
-    MonthlyCashFlowReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.TransactionListReport import (
-    TransactionListReport,
-)
-from tap_quickbooks.quickbooks.reportstreams.ARAgingSummaryReport import (
-    ARAgingSummaryReport,
-)
+from tap_quickbooks.quickbooks.reportstreams.DailyCashFlowReport import DailyCashFlowReport
+from tap_quickbooks.quickbooks.reportstreams.MonthlyCashFlowReport import MonthlyCashFlowReport
+from tap_quickbooks.quickbooks.reportstreams.TransactionListReport import TransactionListReport
+from tap_quickbooks.quickbooks.reportstreams.ARAgingSummaryReport import ARAgingSummaryReport
 
 from tap_quickbooks.quickbooks.rest import Rest
 from tap_quickbooks.quickbooks.exceptions import (
@@ -605,6 +588,8 @@ class Quickbooks:
             reader = ARAgingSummaryReport(self, start_date, state_passed)
         elif catalog_entry["stream"] == "TransactionListReport":
             reader = TransactionListReport(self, start_date, state_passed)
+        elif catalog_entry["stream"] == "ProfitAndLossReport":
+            reader = ProfitAndLossReport(self, start_date, state_passed)
         else:
             reader = ProfitAndLossDetailReport(self, start_date, state_passed)
         return reader.sync(catalog_entry)
