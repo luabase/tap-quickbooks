@@ -163,7 +163,7 @@ def field_to_property_schema(field, mdata):  # pylint:disable=too-many-branches
         },
     }
 
-    qb_types["linked_txn"] = {
+    qb_types["LinkedTxn"] = {
         "type": object_type["type"],
         "properties": {"TxnId": string_type, "TxnType": string_type},
     }
@@ -172,8 +172,44 @@ def field_to_property_schema(field, mdata):  # pylint:disable=too-many-branches
         "type": object_type["type"],
         "properties": {
             "Amount": number_type,
-            "LinkedTxn": {"type": array_type["type"], "items": qb_types["linked_txn"]},
+            "LinkedTxn": {"type": array_type["type"], "items": qb_types["LinkedTxn"]},
         },
+    }
+
+    qb_types["any"] = {
+        "type": object_type["type"],
+        "properties": {
+            "name": string_type,
+            "declaredType": string_type,
+            "scope": string_type,
+            "value": {
+                "type": object_type["type"],
+                "properties": {
+                    "Name": string_type,
+                    "Value": string_type,
+                }
+            },
+            "nil": boolean_type,
+            "globalScope": boolean_type,
+            "typeSubstituted": boolean_type,
+        }
+    }
+
+    qb_types["payment_line"] = {
+        "type": object_type["type"],
+        "properties": {
+            "Amount": number_type,
+            "LinkedTxn": {"type": "array", "items": qb_types["LinkedTxn"]},
+            "LineEx": {
+                "type": object_type["type"],
+                "properties": {
+                    "any": {
+                        "type": "array", 
+                        "items": qb_types["any"]
+                    }
+                }
+            }
+        }
     }
 
     qb_types["invoice_line"] = {
