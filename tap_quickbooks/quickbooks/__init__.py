@@ -287,6 +287,8 @@ def field_to_property_schema(field, mdata):  # pylint:disable=too-many-branches
 
     return property_schema, mdata
 
+class RetriableApiError(Exception):
+    pass
 
 class Quickbooks:
     # pylint: disable=too-many-instance-attributes,too-many-arguments
@@ -427,6 +429,13 @@ class Quickbooks:
             resp = self.session.post(url, headers=headers, data=body)
         else:
             raise TapQuickbooksException("Unsupported HTTP method")
+        
+        if (
+            resp.status_code == 500
+            and resp.text
+            == "Authorization FailureAuthorizationFailure: Unknown Error during Authentication, statusCode: 500"
+        ) or resp.status_code in [400]:
+            raise RetriableApiError(resp.text)
 
         try:
             resp.raise_for_status()
