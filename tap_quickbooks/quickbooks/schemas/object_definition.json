@@ -33,7 +33,7 @@
     {"name": "ExchangeRate", "type": "number"},
     {"name": "DepartmentRef", "type": "string"},
     {"name": "HomeBalance", "type": "number"},
-    {"name": "RecurDataRef", "type": "datetime"},
+    {"name": "RecurDataRef", "type": "string"},
     {"name": "Balance", "type": "number"}
   ],
   "Class": [
