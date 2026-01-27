@@ -12,10 +12,6 @@ import os
 from typing import Dict
 from singer import metadata, metrics
 
-import google.auth
-import google.auth.transport.requests
-import google.oauth2.id_token
-
 from tap_quickbooks.quickbooks.reportstreams.MonthlyBalanceSheetReport import MonthlyBalanceSheetReport
 from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossDetailReport import ProfitAndLossDetailReport
 from tap_quickbooks.quickbooks.reportstreams.ProfitAndLossReport import ProfitAndLossReport
@@ -447,10 +443,7 @@ class Quickbooks:
         return resp
 
     def login(self):
-        if self.is_sandbox:
-            login_url = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
-        else:
-            login_url = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
+        login_url = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
 
         login_body = {
             "grant_type": "refresh_token",
@@ -473,54 +466,7 @@ class Quickbooks:
             LOGGER.info("OAuth2 login successful")
 
             auth = resp.json()
-
             self.access_token = auth["access_token"]
-
-            new_refresh_token = auth["refresh_token"]
-
-            LOGGER.info(f"Old refresh token [{self.refresh_token}].")
-            LOGGER.info("New Refresh token: {}".format(new_refresh_token))
-
-            self.refresh_token = new_refresh_token
-
-            # definite specifc. persist access and refresh token back to app.
-            DEF_SCHEDULER_URL = os.environ.get("DEF_SCHEDULER_URL")
-            TAP_INTEGRATION_ID = os.environ.get("TAP_INTEGRATION_ID")
-            if not DEF_SCHEDULER_URL:
-                LOGGER.warn("DEF_SCHEDULER_URL not set. Tokens only persisted locally.")
-            else:
-                try:
-                    creds, project = google.auth.default()
-                    # creds.valid is False, and creds.token is None
-                    # Need to refresh credentials to populate those
-                    auth_req = google.auth.transport.requests.Request()
-                    id_token = google.oauth2.id_token.fetch_id_token(
-                        auth_req, DEF_SCHEDULER_URL + "/"
-                    )
-
-                    LOGGER.info("Got id_token: {}".format(id_token))
-                    url = (
-                        DEF_SCHEDULER_URL
-                        + f"/v3/el/callback/update_integration_details/{TAP_INTEGRATION_ID}"
-                    )
-                    LOGGER.info(f"Persisting tokens to {url}")
-                    res = requests.post(
-                        url,
-                        headers={
-                            "Authorization": f"Bearer {id_token}",
-                            "Content-Type": "application/json",
-                        },
-                        json={
-                            "accessToken": self.access_token,
-                            "refreshToken": self.refresh_token,
-                        },
-                    )
-                    if res.status_code != 200:
-                        LOGGER.warn(
-                            f"Failed to persist tokens to Definite. Status code: {res.status_code}"
-                        )
-                except Exception as e:
-                    LOGGER.warn(f"Failed to persist tokens to Definite. Error: {e}")
 
         except Exception as e:
             error_message = str(e)
